@@ -55,3 +55,7 @@ $ head out.tsv
 OriginalName    OriginalRole    Name    Keywords        AffiliationInstitution  AffiliationDepartment   AffiliationTitle        KakenUrl
 田中 花子       学術大学 学術学部 教授    田中 花子       老化,認知症,フレイル,Sirt1,エストロゲン     学術大学 学術学部  教授    https://nrid.nii.ac.jp/ja/nrid/1000000999999/
 ```
+
+## Resources
+- [Kaken API Documentation](https://bitbucket.org/niijp/kaken_definition/src/master/)
+- [Registration for CiNii WebAPI](https://support.nii.ac.jp/ja/cinii/api/developer)
