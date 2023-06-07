@@ -1,0 +1,6 @@
+.DS_Store
+kaken-search
+*.tsv
+sample_researcher.json
+data/
+output/
