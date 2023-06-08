@@ -1,5 +1,6 @@
 package main
 
+//
 import (
 	"encoding/csv"
 	"encoding/json"
@@ -10,7 +11,6 @@ import (
 	"net/url"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -2407,60 +2407,107 @@ type KakenResearcher struct {
 
 func main() {
 	var kakenAppId string
+	var researcherName string
+	var researcherAffiliation string
+	var outputFormat string
+
 	var inputPath string
 	var outputPath string
-	var nameColumnIndexString string
-	var affiliationColumnIndexString string
 	var nameColumnIndex int
 	var affiliationColumnIndex int
 
 	app := &cli.App{
 		Name:  "kaken-search",
 		Usage: "a CLI tool to search for researchers on KAKEN database",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:        "id",
-				Value:       "",
-				Usage:       "CiNii App ID",
-				Destination: &kakenAppId,
-				Required:    true,
+		Commands: []*cli.Command{
+			{
+				Name:    "single",
+				Aliases: []string{"s"},
+				Usage:   "Search a single researcher",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "id",
+						Value:       "",
+						Usage:       "CiNii App ID",
+						Destination: &kakenAppId,
+						Required:    true,
+					},
+					&cli.StringFlag{
+						Name:        "name",
+						Aliases:     []string{"n"},
+						Value:       "",
+						Usage:       "Researcher's name",
+						Destination: &researcherName,
+					},
+					&cli.StringFlag{
+						Name:        "affl",
+						Aliases:     []string{"a"},
+						Value:       "",
+						Usage:       "Researcher's affiliation (institution)",
+						Destination: &researcherAffiliation,
+					},
+					&cli.StringFlag{
+						Name:        "format",
+						Aliases:     []string{"f"},
+						Value:       "",
+						Usage:       "Output format [json]",
+						Destination: &outputFormat,
+					},
+				},
+				Action: func(cCtx *cli.Context) error {
+					SingleSearch(kakenAppId, researcherName, researcherAffiliation, outputFormat)
+					return nil
+				},
 			},
-			&cli.StringFlag{
-				Name:        "input",
-				Aliases:     []string{"i"},
-				Value:       "",
-				Usage:       "Path for input CSV",
-				Destination: &inputPath,
-				Required:    true,
-			},
-			&cli.StringFlag{
-				Name:        "name",
-				Aliases:     []string{"n"},
-				Value:       "0",
-				Usage:       "Column number containing researcher's name (start counting from 0)",
-				Destination: &nameColumnIndexString,
-			},
-			&cli.StringFlag{
-				Name:        "affl",
-				Aliases:     []string{"a"},
-				Value:       "1",
-				Usage:       "Column number containing researcher's affiliation (start counting from 0)",
-				Destination: &affiliationColumnIndexString,
-			},
-			&cli.StringFlag{
-				Name:        "output",
-				Aliases:     []string{"o"},
-				Value:       "output.tsv",
-				Usage:       "Path for output TSV",
-				Destination: &outputPath,
+			{
+				Name:    "bulk",
+				Aliases: []string{"b"},
+				Usage:   "Search multiple researchers from CSV",
+				Action: func(cCtx *cli.Context) error {
+					BulkSearch(kakenAppId, inputPath, outputPath, nameColumnIndex, affiliationColumnIndex)
+					return nil
+				},
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:        "id",
+						Value:       "",
+						Usage:       "CiNii App ID",
+						Destination: &kakenAppId,
+						Required:    true,
+					},
+					&cli.StringFlag{
+						Name:        "input",
+						Aliases:     []string{"i"},
+						Value:       "",
+						Usage:       "Path for input CSV",
+						Destination: &inputPath,
+						Required:    true,
+					},
+					&cli.IntFlag{
+						Name:        "name",
+						Aliases:     []string{"n"},
+						Value:       0,
+						Usage:       "Column number containing researcher's name (start counting from 0)",
+						Destination: &nameColumnIndex,
+					},
+					&cli.IntFlag{
+						Name:        "affl",
+						Aliases:     []string{"a"},
+						Value:       1,
+						Usage:       "Column number containing researcher's affiliation (start counting from 0)",
+						Destination: &affiliationColumnIndex,
+					},
+					&cli.StringFlag{
+						Name:        "output",
+						Aliases:     []string{"o"},
+						Value:       "output.tsv",
+						Usage:       "Path for output TSV",
+						Destination: &outputPath,
+					},
+				},
 			},
 		},
-		Action: func(cCtx *cli.Context) error {
-			nameColumnIndex, _ = strconv.Atoi(nameColumnIndexString)
-			affiliationColumnIndex, _ = strconv.Atoi(affiliationColumnIndexString)
-			searchFromCSV(kakenAppId, inputPath, outputPath, nameColumnIndex, affiliationColumnIndex)
-			return nil
-		},
+		Flags: []cli.Flag{},
 	}
 
 	if err := app.Run(os.Args); err != nil {
@@ -2468,7 +2515,37 @@ func main() {
 	}
 }
 
-func searchFromCSV(kakenAppId string, inputPath string, outputPath string, nameColumnIndex int, affiliationColumnIndex int) {
+func SearchAndFormat(kakenAppId string, researcherName string, researcherRole string) (KakenResearcherFormatted, error) {
+
+	researcherData, err := GetResearcherDataFromAPI(researcherName, researcherRole, kakenAppId)
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+
+	formattedData := FormatResearcherData(researcherData)
+	formattedData.OriginalName = researcherName
+	formattedData.OriginalRole = researcherRole
+
+	return formattedData, err
+}
+
+func SingleSearch(kakenAppId string, researcherName string, researcherRole string, outputFormat string) {
+	formattedData, _ := SearchAndFormat(kakenAppId, researcherName, researcherRole)
+
+	if outputFormat == "json" {
+		jsonData, err := json.Marshal(formattedData)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+		fmt.Println(string(jsonData))
+	} else {
+		fmt.Println(researcherName + "：" + researcherRole)
+		fmt.Println(formattedData.Keywords)
+	}
+}
+
+func BulkSearch(kakenAppId string, inputPath string, outputPath string, nameColumnIndex int, affiliationColumnIndex int) {
 
 	// 名前と所属を含んだCSVを読み込み
 	filePath := inputPath
@@ -2500,15 +2577,8 @@ func searchFromCSV(kakenAppId string, inputPath string, outputPath string, nameC
 		}
 
 		fmt.Println(researcherName + "：" + researcherRole)
-
-		researcherData, errorResearcherData := GetResearcherData(researcherName, researcherRole, kakenAppId)
-		if errorResearcherData != nil {
-			fmt.Printf(errorResearcherData.Error())
-		}
-
-		formattedData := FormatResearcherData(researcherData)
-		formattedData.OriginalName = researcherName
-		formattedData.OriginalRole = researcherRole
+		formattedData, _ := SearchAndFormat(kakenAppId, researcherName, researcherRole)
+		fmt.Println(formattedData.Keywords)
 
 		if err := enc.Encode(formattedData); err != nil {
 			fmt.Println(err)
@@ -2524,7 +2594,7 @@ func searchFromCSV(kakenAppId string, inputPath string, outputPath string, nameC
 
 }
 
-func GetResearcherData(researcherName string, researcherInstitution string, kakenAppId string) (KakenResearcher, error) {
+func GetResearcherDataFromAPI(researcherName string, researcherInstitution string, kakenAppId string) (KakenResearcher, error) {
 	// API Endpoint
 	apiUrl := &url.URL{}
 	apiUrl.Scheme = "https"
