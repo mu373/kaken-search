@@ -1,5 +1,13 @@
 # kaken-search
 
+CLI tool to search for researchers on [KAKEN database](https://kaken.nii.ac.jp/ja/). CiNii App ID is required. Registration can be done from [this page](https://support.nii.ac.jp/ja/cinii/api/developer).
+
+Following informations are available upon search. Search results can be exported as TSV file.
+- Researcher's name
+- Research keywords
+- Affiliation (institution, department, title)
+- KAKEN researcher page URL (e.g., https://nrid.nii.ac.jp/ja/nrid/0000000000000/)
+
 ## Build/Run
 ```sh
 go build kaken-search.go
