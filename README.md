@@ -1,6 +1,8 @@
 # kaken-search
 
-CLI tool to search for researchers on [KAKEN database](https://kaken.nii.ac.jp/ja/). Following informations are available upon search. Search results can be exported as TSV file.
+CLI tool to search for researchers on [KAKEN database](https://kaken.nii.ac.jp/ja/). Search results can be exported as TSV file.
+
+Following informations are available upon search.
 - Researcher's name
 - Research keywords
 - Affiliation (institution, department, title)
