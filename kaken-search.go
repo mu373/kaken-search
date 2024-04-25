@@ -2599,7 +2599,7 @@ func GetResearcherDataFromAPI(researcherName string, researcherInstitution strin
 	apiUrl := &url.URL{}
 	apiUrl.Scheme = "https"
 	apiUrl.Host = "nrid.nii.ac.jp"
-	apiUrl.Path = "opensearch"
+	apiUrl.Path = "opensearch/"
 
 	apiQuery := apiUrl.Query()
 	apiQuery.Set("appid", kakenAppId)
